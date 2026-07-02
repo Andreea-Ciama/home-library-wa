@@ -1,5 +1,6 @@
 using HomeLibrary.Api.Data;
 using Microsoft.EntityFrameworkCore;
+using HomeLibrary.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,6 +25,8 @@ builder.Services.AddCors(options =>
             .AllowAnyOrigin();
     });
 });
+
+builder.Services.AddSingleton<RabbitMqPublisher>();
 
 var app = builder.Build();
 
