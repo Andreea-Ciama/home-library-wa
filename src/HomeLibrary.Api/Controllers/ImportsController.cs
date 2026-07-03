@@ -21,9 +21,31 @@ public class ImportsController : ControllerBase
         if (file == null || file.Length == 0)
             return BadRequest("No file provided");
 
+        var isCsv =
+            file.ContentType == "text/csv" ||
+            file.ContentType == "application/vnd.ms-excel" ||
+            file.FileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase);
+
+        if (!isCsv)
+            return BadRequest("Invalid file type. Please upload a CSV file.");
+
         using var reader = new StreamReader(file.OpenReadStream());
 
-        var lineNumber = 0;
+        var header = await reader.ReadLineAsync();
+
+        if (string.IsNullOrWhiteSpace(header))
+            return BadRequest("CSV is empty.");
+
+        var headerParts = header.Split(',').Select(x => x.Trim().ToLower()).ToArray();
+
+        if (headerParts.Length < 3 ||
+            headerParts[0] != "name" ||
+            headerParts[1] != "author" ||
+            headerParts[2] != "genre")
+        {
+            return BadRequest("Invalid CSV header. Expected: name,author,genre");
+        }
+
         var queued = 0;
 
         while (!reader.EndOfStream)
@@ -33,32 +55,30 @@ public class ImportsController : ControllerBase
             if (string.IsNullOrWhiteSpace(line))
                 continue;
 
-            // skip header
-            if (lineNumber == 0)
-            {
-                lineNumber++;
-                continue;
-            }
-
             var parts = line.Split(',');
 
             if (parts.Length < 3)
+                continue;
+
+            var name = parts[0].Trim();
+            var author = parts[1].Trim();
+            var genre = parts[2].Trim();
+
+            if (string.IsNullOrWhiteSpace(name) ||
+                string.IsNullOrWhiteSpace(author) ||
+                string.IsNullOrWhiteSpace(genre))
             {
-                lineNumber++;
                 continue;
             }
 
-            var message = new BookImportMessage(
-                parts[0].Trim(),
-                parts[1].Trim(),
-                parts[2].Trim()
-            );
+            var message = new BookImportMessage(name, author, genre);
 
             await _publisher.Publish(message);
             queued++;
-
-            lineNumber++;
         }
+
+        if (queued == 0)
+            return BadRequest("CSV contains no valid rows.");
 
         return Accepted(new { queued });
     }

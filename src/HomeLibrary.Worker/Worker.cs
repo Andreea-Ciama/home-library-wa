@@ -2,7 +2,7 @@ using System.Text;
 using System.Text.Json;
 using HomeLibrary.Worker.Data;
 using HomeLibrary.Worker.Messages;
-using HomeLibrary.Worker.Models;
+using HomeLibrary.Contracts.Models;
 using Microsoft.Extensions.DependencyInjection;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
@@ -78,6 +78,7 @@ public class Worker : BackgroundService
 
                 db.Books.Add(new Book
                 {
+                    Id = Guid.NewGuid(),
                     Name = message.Name,
                     Author = message.Author,
                     Genre = message.Genre,
