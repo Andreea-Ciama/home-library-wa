@@ -13,7 +13,7 @@ public class RabbitMqPublisher
     {
         _factory = new ConnectionFactory()
         {
-            HostName = "localhost",
+            HostName = "rabbitmq",
             UserName = "guest",
             Password = "guest"
         };

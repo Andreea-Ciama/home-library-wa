@@ -16,17 +16,38 @@ public class Worker : BackgroundService
         _scopeFactory = scopeFactory;
     }
 
-    protected override Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         var factory = new ConnectionFactory()
         {
-            HostName = "rabbitmq", 
+            HostName = "rabbitmq",
             UserName = "guest",
             Password = "guest"
         };
 
-        var connection = factory.CreateConnection();
-        var channel = connection.CreateModel();
+        IConnection? connection = null;
+
+        while (connection == null && !stoppingToken.IsCancellationRequested)
+        {
+            try
+            {
+                Console.WriteLine("Connecting to RabbitMQ...");
+
+                connection = factory.CreateConnection();
+
+                Console.WriteLine("Connected to RabbitMQ.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"RabbitMQ not ready: {ex.Message}");
+                await Task.Delay(5000, stoppingToken);
+            }
+        }
+
+        if (connection == null)
+            return;
+
+        using var channel = connection.CreateModel();
 
         channel.QueueDeclare(
             queue: "book-imports",
@@ -45,6 +66,8 @@ public class Worker : BackgroundService
                 var body = args.Body.ToArray();
                 var json = Encoding.UTF8.GetString(body);
 
+                Console.WriteLine($"Received: {json}");
+
                 var message = JsonSerializer.Deserialize<BookImportMessage>(json);
 
                 if (message == null)
@@ -62,10 +85,12 @@ public class Worker : BackgroundService
                 });
 
                 db.SaveChanges();
+
+                Console.WriteLine($"Saved: {message.Name}");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Worker error: {ex.Message}");
+                Console.WriteLine(ex.ToString());
             }
         };
 
@@ -75,6 +100,9 @@ public class Worker : BackgroundService
             consumer: consumer
         );
 
-        return Task.CompletedTask;
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            await Task.Delay(1000, stoppingToken);
+        }
     }
 }

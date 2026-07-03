@@ -26,7 +26,7 @@ export class UploadDialog {
 
   private dialogRef = inject(MatDialogRef<UploadDialog>);
 
-  apiUrl = 'http://localhost:5091'; // pune portul corect al API-ului
+  apiUrl = 'http://localhost:5000'; // pune portul corect al API-ului
 
   file?: File;
   onDragOver(event: DragEvent) {

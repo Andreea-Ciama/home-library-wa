@@ -24,7 +24,7 @@ export class App {
 
   
 
-  apiUrl = 'http://localhost:5091'; // schimbă dacă API rulează pe alt port
+  apiUrl = 'http://localhost:5000'; 
 
    ngOnInit() {
     console.log("ngOnInit");

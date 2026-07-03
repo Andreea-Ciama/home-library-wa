@@ -9,11 +9,8 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddControllers();
 
-builder.Services.AddDbContext<LibraryDbContext>(options =>
-{
-    options.UseNpgsql(
-        builder.Configuration.GetConnectionString("Postgres"));
-});
+builder.Services.AddDbContext<LibraryDbContext>(opt =>
+    opt.UseNpgsql(builder.Configuration.GetConnectionString("Postgres")));
 
 builder.Services.AddCors(options =>
 {
@@ -26,9 +23,17 @@ builder.Services.AddCors(options =>
     });
 });
 
+
+
 builder.Services.AddSingleton<RabbitMqPublisher>();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<LibraryDbContext>();
+    db.Database.Migrate();
+}
 
 if (app.Environment.IsDevelopment())
 {
