@@ -1,0 +1,47 @@
+<h2 mat-dialog-title>Upload CSV</h2>
+
+<mat-dialog-content>
+
+  <div
+    class="drop-zone"
+    (dragover)="onDragOver($event)"
+    (drop)="onDrop($event)"
+    (click)="fileInput.click()">
+
+    <ng-container *ngIf="!file">
+      <h3>📂 Drag & Drop</h3>
+
+      <p>Trage aici fișierul CSV</p>
+
+      <p>sau click pentru selectare</p>
+    </ng-container>
+
+    <ng-container *ngIf="file">
+      <h3>📄 {{ file.name }}</h3>
+    </ng-container>
+
+    <input
+      #fileInput
+      hidden
+      type="file"
+      accept=".csv"
+      (change)="onFileSelected($event)">
+  </div>
+
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+
+  <button mat-button mat-dialog-close>
+    Cancel
+  </button>
+
+  <button
+    mat-raised-button
+    color="primary"
+    [disabled]="!file"
+    (click)="upload()">
+    Upload
+</button>
+
+</mat-dialog-actions>
