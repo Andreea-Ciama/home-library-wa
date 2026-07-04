@@ -1,6 +1,8 @@
 <Solution>
   <Project Path="HomeLibrary.Api/HomeLibrary.Api.csproj" />
+  <Project Path="HomeLibrary.Application/HomeLibrary.Application.csproj" />
   <Project Path="HomeLibrary.Contracts/HomeLibrary.Contracts.csproj" />
-  <Project Path="HomeLibrary.Tests/HomeLibrary.Tests.csproj" />
+  <Project Path="HomeLibrary.Data/HomeLibrary.Data.csproj" />
+  <Project Path="HomeLibrary.Messaging/HomeLibrary.Messaging.csproj" />
   <Project Path="HomeLibrary.Worker/HomeLibrary.Worker.csproj" />
 </Solution>

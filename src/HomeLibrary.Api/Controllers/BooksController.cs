@@ -1,7 +1,5 @@
-using HomeLibrary.Api.Data;
-using HomeLibrary.Contracts.Dtos;
+using HomeLibrary.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace HomeLibrary.Api.Controllers;
 
@@ -9,23 +7,18 @@ namespace HomeLibrary.Api.Controllers;
 [Route("api/books")]
 public class BooksController : ControllerBase
 {
-    private readonly LibraryDbContext _db;
+    private readonly IBookQueryService _bookQueryService;
 
-    public BooksController(LibraryDbContext db)
+    public BooksController(IBookQueryService bookQueryService)
     {
-        _db = db;
+        _bookQueryService = bookQueryService;
     }
 
     [HttpGet]
-    public async Task<IEnumerable<BookDto>> Get()
+    public async Task<IActionResult> Get()
     {
-        return await _db.Books
-            .OrderByDescending(x => x.ImportDate)
-            .Select(x => new BookDto(
-                x.Name,
-                x.Author,
-                x.Genre,
-                x.ImportDate))
-            .ToListAsync();
+        var books = await _bookQueryService.GetBooks();
+
+        return Ok(books);
     }
 }

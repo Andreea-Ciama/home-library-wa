@@ -2,53 +2,57 @@ using System.Text;
 using System.Text.Json;
 using HomeLibrary.Contracts.Messages;
 using HomeLibrary.Contracts.Models;
-using HomeLibrary.Worker.Data;
-using Microsoft.Extensions.DependencyInjection;
+using HomeLibrary.Data;
+using HomeLibrary.Messaging;
+using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
 public class Worker : BackgroundService
 {
     private readonly IServiceScopeFactory _scopeFactory;
+    private readonly RabbitMqOptions _options;
 
-    public Worker(IServiceScopeFactory scopeFactory)
+    public Worker(
+        IServiceScopeFactory scopeFactory,
+        IOptions<RabbitMqOptions> options)
     {
         _scopeFactory = scopeFactory;
+        _options = options.Value;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         var factory = new ConnectionFactory
         {
-            HostName = "rabbitmq",
-            UserName = "guest",
-            Password = "guest"
+            HostName = _options.HostName,
+            UserName = _options.UserName,
+            Password = _options.Password
         };
 
         IConnection? connection = null;
 
-        while (connection == null && !stoppingToken.IsCancellationRequested)
+        while (connection is null && !stoppingToken.IsCancellationRequested)
         {
             try
             {
-                Console.WriteLine("Connecting to RabbitMQ...");
                 connection = factory.CreateConnection();
-                Console.WriteLine("Connected to RabbitMQ.");
+                Console.WriteLine("Worker connected to RabbitMQ.");
             }
-            catch (Exception ex)
+            catch
             {
-                Console.WriteLine($"RabbitMQ not ready: {ex.Message}");
-                await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+                Console.WriteLine("RabbitMQ not ready. Retrying in 5 seconds...");
+                await Task.Delay(5000, stoppingToken);
             }
         }
 
-        if (connection == null)
+        if (connection is null)
             return;
 
         using var channel = connection.CreateModel();
 
         channel.QueueDeclare(
-            queue: "book-imports",
+            queue: _options.QueueName,
             durable: true,
             exclusive: false,
             autoDelete: false,
@@ -57,46 +61,17 @@ public class Worker : BackgroundService
 
         var consumer = new EventingBasicConsumer(channel);
 
-        consumer.Received += (sender, args) =>
+        consumer.Received += async (sender, args) =>
         {
             try
             {
-                var body = args.Body.ToArray();
-                var json = Encoding.UTF8.GetString(body);
+                var json = Encoding.UTF8.GetString(args.Body.ToArray());
 
                 var message = JsonSerializer.Deserialize<BookImportMessage>(json);
 
-                if (message == null)
+                if (message is null)
                     return;
 
-                SaveBookWithRetry(message);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.ToString());
-            }
-        };
-
-        channel.BasicConsume(
-            queue: "book-imports",
-            autoAck: true,
-            consumer: consumer
-        );
-
-        while (!stoppingToken.IsCancellationRequested)
-        {
-            await Task.Delay(1000, stoppingToken);
-        }
-    }
-
-    private void SaveBookWithRetry(BookImportMessage message)
-    {
-        const int maxRetries = 5;
-
-        for (var attempt = 1; attempt <= maxRetries; attempt++)
-        {
-            try
-            {
                 using var scope = _scopeFactory.CreateScope();
                 var db = scope.ServiceProvider.GetRequiredService<LibraryDbContext>();
 
@@ -109,18 +84,22 @@ public class Worker : BackgroundService
                     ImportDate = DateTime.UtcNow
                 });
 
-                db.SaveChanges();
+                await db.SaveChangesAsync(stoppingToken);
 
-                Console.WriteLine($"Saved book: {message.Name}");
-                return;
+                Console.WriteLine($"Book imported: {message.Name}");
             }
-            catch (Exception ex) when (attempt < maxRetries)
+            catch (Exception ex)
             {
-                Console.WriteLine($"Postgres not ready or save failed: {ex.Message}");
-                Thread.Sleep(TimeSpan.FromSeconds(3));
+                Console.WriteLine($"Worker error: {ex.Message}");
             }
-        }
+        };
 
-        throw new Exception($"Could not save book after retries: {message.Name}");
+        channel.BasicConsume(
+            queue: _options.QueueName,
+            autoAck: true,
+            consumer: consumer
+        );
+
+        await Task.Delay(Timeout.Infinite, stoppingToken);
     }
 }

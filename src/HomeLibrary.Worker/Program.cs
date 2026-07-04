@@ -1,12 +1,12 @@
-using HomeLibrary.Worker;
-using HomeLibrary.Worker.Data;
-using Microsoft.EntityFrameworkCore;
+using HomeLibrary.Data;
+using HomeLibrary.Messaging;
 
 var builder = Host.CreateApplicationBuilder(args);
 
-builder.Services.AddDbContext<LibraryDbContext>(options =>
-    options.UseNpgsql(
-        builder.Configuration.GetConnectionString("Postgres")));
+builder.Services.AddData(builder.Configuration);
+
+builder.Services.Configure<RabbitMqOptions>(
+    builder.Configuration.GetSection("RabbitMq"));
 
 builder.Services.AddHostedService<Worker>();
 

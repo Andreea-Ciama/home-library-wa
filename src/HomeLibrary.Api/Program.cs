@@ -1,31 +1,26 @@
-using HomeLibrary.Api.Data;
+using HomeLibrary.Application;
+using HomeLibrary.Data;
+using HomeLibrary.Messaging;
 using Microsoft.EntityFrameworkCore;
-using HomeLibrary.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services
+builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
-builder.Services.AddControllers();
-
-builder.Services.AddDbContext<LibraryDbContext>(opt =>
-    opt.UseNpgsql(builder.Configuration.GetConnectionString("Postgres")));
+builder.Services.AddApplication();
+builder.Services.AddData(builder.Configuration);
+builder.Services.AddMessaging(builder.Configuration);
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("Angular", policy =>
     {
-        policy
-            .AllowAnyHeader()
-            .AllowAnyMethod()
-            .AllowAnyOrigin();
+        policy.AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowAnyOrigin();
     });
 });
-
-
-
-builder.Services.AddSingleton<RabbitMqPublisher>();
 
 var app = builder.Build();
 
@@ -41,8 +36,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("Angular");
-
-app.UseHttpsRedirection();
 
 app.MapControllers();
 
