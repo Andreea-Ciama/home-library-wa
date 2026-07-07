@@ -1,6 +1,8 @@
+using HomeLibrary.Contracts.Responses;
+
 namespace HomeLibrary.Application.Interfaces;
 
 public interface IBookImportService
 {
-    Task<int> Import(string filePath);
+    Task<ApiResponse<ImportResult>> Import(string filePath, string fileName);
 }

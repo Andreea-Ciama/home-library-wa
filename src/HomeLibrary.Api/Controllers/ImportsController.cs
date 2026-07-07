@@ -1,4 +1,5 @@
 using HomeLibrary.Application.Interfaces;
+using HomeLibrary.Contracts.Responses;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HomeLibrary.Api.Controllers;
@@ -18,19 +19,41 @@ public class ImportsController : ControllerBase
     public async Task<IActionResult> Import(IFormFile file)
     {
         if (file is null || file.Length == 0)
-            return BadRequest("File is required.");
+        {
+            return BadRequest(ApiResponse<ImportResult>.Fail("File is required."));
+        }
+
+        var extension = Path.GetExtension(file.FileName);
+
+        if (!string.Equals(extension, ".csv", StringComparison.OrdinalIgnoreCase))
+        {
+            return BadRequest(ApiResponse<ImportResult>.Fail("Only CSV files are allowed."));
+        }
 
         var tempFile = Path.GetTempFileName();
 
-        await using (var stream = System.IO.File.Create(tempFile))
+        try
         {
-            await file.CopyToAsync(stream);
+            await using (var stream = System.IO.File.Create(tempFile))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            var response = await _bookImportService.Import(tempFile, file.FileName);
+
+            if (!response.Success)
+            {
+                return BadRequest(response);
+            }
+
+            return Ok(response);
         }
-
-        var queued = await _bookImportService.Import(tempFile);
-
-        System.IO.File.Delete(tempFile);
-
-        return Ok(new { queued });
+        finally
+        {
+            if (System.IO.File.Exists(tempFile))
+            {
+                System.IO.File.Delete(tempFile);
+            }
+        }
     }
 }

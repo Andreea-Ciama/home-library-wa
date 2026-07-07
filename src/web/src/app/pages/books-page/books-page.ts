@@ -14,11 +14,24 @@ export class BooksPage implements OnInit, OnDestroy {
   private cdr = inject(ChangeDetectorRef);
 
   books: any[] = [];
+  successMessage = '';
+
   apiUrl = 'http://localhost:5000';
 
   private intervalId?: number;
 
   ngOnInit() {
+    const state = history.state;
+
+    if (state.successMessage) {
+      this.successMessage = state.successMessage;
+
+      setTimeout(() => {
+        this.successMessage = '';
+        this.cdr.detectChanges();
+      }, 5000);
+    }
+
     this.loadBooks();
 
     this.intervalId = window.setInterval(() => {

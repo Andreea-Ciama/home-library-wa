@@ -28,48 +28,50 @@
     </div>
 
     <div
+      *ngIf="successMessage"
+      class="mb-6 rounded-xl border border-green-400/30 bg-green-500/10 p-4 text-green-300">
+      {{ successMessage }}
+    </div>
+
+    <div
       class="overflow-hidden rounded-2xl border border-white/10 bg-white/5 shadow-2xl">
 
       <table class="w-full">
 
         <thead class="bg-white/10 text-left text-sm uppercase tracking-wider text-slate-300">
-
-          <tr>
-            <th class="px-6 py-4">Book</th>
-            <th class="px-6 py-4">Author</th>
-            <th class="px-6 py-4">Genre</th>
-            <th class="px-6 py-4">Imported</th>
-          </tr>
-
+        <tr>
+          <th class="px-6 py-4">Book</th>
+          <th class="px-6 py-4">Author</th>
+          <th class="px-6 py-4">Genre</th>
+          <th class="px-6 py-4">Imported</th>
+        </tr>
         </thead>
 
         <tbody class="divide-y divide-white/10">
+        <tr
+          *ngFor="let book of books"
+          class="transition hover:bg-white/10">
 
-          <tr
-            *ngFor="let book of books"
-            class="transition hover:bg-white/10">
+          <td class="px-6 py-4 font-medium">
+            {{ book.name }}
+          </td>
 
-            <td class="px-6 py-4 font-medium">
-              {{ book.name }}
-            </td>
+          <td class="px-6 py-4 text-slate-300">
+            {{ book.author }}
+          </td>
 
-            <td class="px-6 py-4 text-slate-300">
-              {{ book.author }}
-            </td>
-
-            <td class="px-6 py-4">
+          <td class="px-6 py-4">
               <span
                 class="rounded-full bg-pink-500/10 px-3 py-1 text-sm font-medium text-pink-300">
                 {{ book.genre }}
               </span>
-            </td>
+          </td>
 
-            <td class="px-6 py-4 text-slate-400">
-              {{ book.importDate | date:'dd/MM/yyyy HH:mm' }}
-            </td>
+          <td class="px-6 py-4 text-slate-400">
+            {{ book.importDate | date:'dd/MM/yyyy HH:mm' }}
+          </td>
 
-          </tr>
-
+        </tr>
         </tbody>
 
       </table>

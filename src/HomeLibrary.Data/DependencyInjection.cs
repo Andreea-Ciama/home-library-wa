@@ -18,6 +18,7 @@ public static class DependencyInjection
         });
 
         services.AddScoped<IBookRepository, BookRepository>();
+        services.AddScoped<IImportHistoryRepository, ImportHistoryRepository>();
 
         return services;
     }

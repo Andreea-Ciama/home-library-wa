@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Component, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import { ApiResponse, ImportResult } from '../../shared/models/api-response';
 
 @Component({
   selector: 'app-upload-page',
@@ -12,11 +13,15 @@ import { Router, RouterLink } from '@angular/router';
 export class UploadPage {
   private http = inject(HttpClient);
   private router = inject(Router);
+  private cdr = inject(ChangeDetectorRef);
 
   apiUrl = 'http://localhost:5000';
 
   file?: File;
   isUploading = false;
+
+  message = '';
+  isError = false;
 
   onDragOver(event: DragEvent) {
     event.preventDefault();
@@ -26,7 +31,7 @@ export class UploadPage {
     event.preventDefault();
 
     if (event.dataTransfer?.files.length) {
-      this.file = event.dataTransfer.files[0];
+      this.setFile(event.dataTransfer.files[0]);
     }
   }
 
@@ -34,34 +39,74 @@ export class UploadPage {
     const input = event.target as HTMLInputElement;
 
     if (input.files?.length) {
-      this.file = input.files[0];
+      this.setFile(input.files[0]);
     }
   }
 
+  setFile(file: File) {
+    this.message = '';
+    this.isError = false;
+
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+      this.file = undefined;
+      this.showError('Only CSV files are allowed. Please choose another file.');
+      return;
+    }
+
+    this.file = file;
+    this.cdr.detectChanges();
+  }
+
   upload() {
+    this.message = '';
+    this.isError = false;
+
     if (!this.file) {
-      alert('Please select a CSV file first.');
+      this.showError('Please select a CSV file first.');
       return;
     }
 
     this.isUploading = true;
+    this.cdr.detectChanges();
 
     const formData = new FormData();
     formData.append('file', this.file);
 
-    this.http.post(`${this.apiUrl}/api/imports`, formData).subscribe({
-      next: () => {
-        this.isUploading = false;
+    this.http
+      .post<ApiResponse<ImportResult>>(`${this.apiUrl}/api/imports`, formData)
+      .subscribe({
+        next: (response) => {
+          this.isUploading = false;
 
-        setTimeout(() => {
-          this.router.navigate(['/books']);
-        }, 1000);
-      },
-      error: (err) => {
-        this.isUploading = false;
-        console.error(err);
-        alert('Upload failed.');
-      },
-    });
+          if (!response.success) {
+            this.showError(response.errors[0] ?? 'Upload failed. Please choose another file.');
+            return;
+          }
+
+          const successMessage =
+            response.data?.message ?? 'Upload succeeded. Books were imported.';
+
+          this.router.navigate(['/books'], {
+            state: {
+              successMessage,
+            },
+          });
+        },
+        error: (err) => {
+          this.isUploading = false;
+
+          const backendMessage =
+            err?.error?.errors?.[0] ??
+            'This CSV file was already uploaded or has an invalid format. Please choose another file.';
+
+          this.showError(backendMessage);
+        },
+      });
+  }
+
+  private showError(message: string) {
+    this.message = message;
+    this.isError = true;
+    this.cdr.detectChanges();
   }
 }
