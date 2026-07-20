@@ -11,4 +11,8 @@ public class Book
     public string Genre { get; set; } = "";
 
     public DateTime ImportDate { get; set; }
+
+    public Guid ImportId { get; set; }
+
+    public ImportHistory Import { get; set; } = null!;
 }

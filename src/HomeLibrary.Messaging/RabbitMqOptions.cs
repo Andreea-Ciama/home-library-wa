@@ -1,9 +1,20 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace HomeLibrary.Messaging;
 
-public class RabbitMqOptions
+public sealed class RabbitMqOptions
 {
-    public string HostName { get; set; } = "";
-    public string UserName { get; set; } = "";
-    public string Password { get; set; } = "";
-    public string QueueName { get; set; } = "";
+    public const string SectionName = "RabbitMq";
+
+    [Required]
+    public string HostName { get; init; } = "";
+
+    [Required]
+    public string UserName { get; init; } = "";
+
+    [Required]
+    public string Password { get; init; } = "";
+
+    [Required]
+    public string QueueName { get; init; } = "";
 }

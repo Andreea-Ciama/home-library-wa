@@ -1,4 +1,4 @@
-using HomeLibrary.Application.Interfaces;
+using HomeLibrary.Contracts.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -10,10 +10,18 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.Configure<RabbitMqOptions>(
-            configuration.GetSection("RabbitMq"));
+        services
+            .AddOptions<RabbitMqOptions>()
+            .Bind(
+                configuration.GetSection(
+                    RabbitMqOptions.SectionName));
+            
 
         services.AddScoped<IMessagePublisher, RabbitMqPublisher>();
+
+        services.AddSingleton<
+            IBookMessageConsumer,
+            RabbitMqBookMessageConsumer>();
 
         return services;
     }

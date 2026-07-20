@@ -4,5 +4,8 @@ namespace HomeLibrary.Application.Interfaces;
 
 public interface IBookImportService
 {
-    Task<ApiResponse<ImportResult>> Import(string filePath, string fileName);
+    Task<ImportResult> Import(
+        string filePath,
+        string fileName,
+        CancellationToken cancellationToken = default);
 }

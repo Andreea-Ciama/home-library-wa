@@ -1,26 +1,23 @@
 using System.Text;
 using System.Text.Json;
-using HomeLibrary.Application.Interfaces;
+using HomeLibrary.Contracts.Interfaces;
 using HomeLibrary.Contracts.Messages;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 
 namespace HomeLibrary.Messaging;
 
-public class RabbitMqPublisher : IMessagePublisher
+public sealed class RabbitMqPublisher(
+        IOptions<RabbitMqOptions> options)
+    : IMessagePublisher
 {
-    private readonly RabbitMqOptions _options;
+    private readonly RabbitMqOptions _options = options.Value;
 
-    public RabbitMqPublisher(IOptions<RabbitMqOptions> options)
+    public Task Publish(
+        BookImportMessage message,
+        CancellationToken cancellationToken = default)
     {
-        _options = options.Value;
-    }
-
-    public Task Publish(BookImportMessage message)
-    {
-        Console.WriteLine($"RabbitMQ HostName: '{_options.HostName}'");
-        Console.WriteLine($"RabbitMQ UserName: '{_options.UserName}'");
-        Console.WriteLine($"RabbitMQ QueueName: '{_options.QueueName}'");
+        cancellationToken.ThrowIfCancellationRequested();
 
         var factory = new ConnectionFactory
         {
@@ -37,18 +34,19 @@ public class RabbitMqPublisher : IMessagePublisher
             durable: true,
             exclusive: false,
             autoDelete: false,
-            arguments: null
-        );
+            arguments: null);
 
         var json = JsonSerializer.Serialize(message);
         var body = Encoding.UTF8.GetBytes(json);
 
+        var properties = channel.CreateBasicProperties();
+        properties.Persistent = true;
+
         channel.BasicPublish(
             exchange: "",
             routingKey: _options.QueueName,
-            basicProperties: null,
-            body: body
-        );
+            basicProperties: properties,
+            body: body);
 
         return Task.CompletedTask;
     }

@@ -4,23 +4,28 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HomeLibrary.Data.Repositories;
 
-public class ImportHistoryRepository : IImportHistoryRepository
+public sealed class ImportHistoryRepository(
+        LibraryDbContext db)
+    : IImportHistoryRepository
 {
-    private readonly LibraryDbContext _db;
-
-    public ImportHistoryRepository(LibraryDbContext db)
+    public Task<bool> ExistsByHash(
+        string fileHash,
+        CancellationToken cancellationToken = default)
     {
-        _db = db;
+        return db.ImportHistories.AnyAsync(
+            importHistory =>
+                importHistory.FileHash == fileHash,
+            cancellationToken);
     }
 
-    public Task<bool> ExistsByHash(string fileHash)
+    public async Task Add(
+        ImportHistory importHistory,
+        CancellationToken cancellationToken = default)
     {
-        return _db.ImportHistories.AnyAsync(x => x.FileHash == fileHash);
-    }
+        await db.ImportHistories.AddAsync(
+            importHistory,
+            cancellationToken);
 
-    public async Task Add(ImportHistory importHistory)
-    {
-        _db.ImportHistories.Add(importHistory);
-        await _db.SaveChangesAsync();
+        await db.SaveChangesAsync(cancellationToken);
     }
 }

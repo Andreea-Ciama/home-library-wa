@@ -1,7 +1,7 @@
 namespace HomeLibrary.Contracts.Messages;
 
-public record BookImportMessage(
+public sealed record BookImportMessage(
+    Guid ImportId,
     string Name,
     string Author,
-    string Genre
-);
+    string Genre);
