@@ -5,16 +5,10 @@ using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace HomeLibrary.Api.Filters;
 
-public sealed class RequestValidationFilter : IAsyncActionFilter
-{
-    private readonly IRequestValidatorFactory _validatorFactory;
-
-    public RequestValidationFilter(
+public sealed class RequestValidationFilter(
         IRequestValidatorFactory validatorFactory)
-    {
-        _validatorFactory = validatorFactory;
-    }
-
+    : IAsyncActionFilter
+{
     public async Task OnActionExecutionAsync(
         ActionExecutingContext context,
         ActionExecutionDelegate next)
@@ -26,7 +20,7 @@ public sealed class RequestValidationFilter : IAsyncActionFilter
                 continue;
             }
 
-            var validator = _validatorFactory.Create(
+            var validator = validatorFactory.Create(
                 actionArgument.GetType());
 
             if (validator is null)

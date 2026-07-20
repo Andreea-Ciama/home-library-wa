@@ -3,24 +3,15 @@ using HomeLibrary.Contracts.Responses;
 
 namespace HomeLibrary.Api.Middlewares;
 
-public sealed class ExceptionMiddleware
+public sealed class ExceptionMiddleware(
+    RequestDelegate next,
+    ILogger<ExceptionMiddleware> logger)
 {
-    private readonly RequestDelegate _next;
-    private readonly ILogger<ExceptionMiddleware> _logger;
-
-    public ExceptionMiddleware(
-        RequestDelegate next,
-        ILogger<ExceptionMiddleware> logger)
-    {
-        _next = next;
-        _logger = logger;
-    }
-
     public async Task InvokeAsync(HttpContext httpContext)
     {
         try
         {
-            await _next(httpContext);
+            await next(httpContext);
         }
         catch (CsvValidationException exception)
         {
@@ -38,7 +29,7 @@ public sealed class ExceptionMiddleware
         }
         catch (Exception exception)
         {
-            _logger.LogError(
+            logger.LogError(
                 exception,
                 "An unexpected error occurred while processing the request.");
 

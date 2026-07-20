@@ -5,19 +5,14 @@ namespace HomeLibrary.Api.Controllers;
 
 [ApiController]
 [Route("api/books")]
-public class BooksController : ControllerBase
+public sealed class BooksController(
+        IBookQueryService bookQueryService)
+    : ControllerBase
 {
-    private readonly IBookQueryService _bookQueryService;
-
-    public BooksController(IBookQueryService bookQueryService)
-    {
-        _bookQueryService = bookQueryService;
-    }
-
     [HttpGet]
     public async Task<IActionResult> Get()
     {
-        var books = await _bookQueryService.GetBooks();
+        var books = await bookQueryService.GetBooks();
 
         return Ok(books);
     }

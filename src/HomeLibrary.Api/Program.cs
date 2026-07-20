@@ -55,10 +55,6 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-/*
- * CORS trebuie pus înainte de middleware-ul care scrie răspunsurile,
- * pentru ca inclusiv răspunsurile 400/409/500 să primească header-ele CORS.
- */
 app.UseCors("Angular");
 
 app.UseMiddleware<ExceptionMiddleware>();
